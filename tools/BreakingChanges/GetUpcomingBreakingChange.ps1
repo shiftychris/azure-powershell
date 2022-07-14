@@ -19,51 +19,51 @@
 # Export-BreakingChangeMsg, this will create `UpcommingBreakingChanges.md` under current path
 # ```
 
-function Get-AttributeSpecificMessage
+Function Get-AttributeSpecificMessage
 {
     [CmdletBinding()]
-    param (
+    Param (
         [Parameter()]
         [System.Object]
         $attribute
     )
-    if ($attribute.ChangeDescription -ne $Null)
+    If ($Null -ne $attribute.ChangeDescription)
     {
-        return $attribute.ChangeDescription
+        Return $attribute.ChangeDescription
     }
-    # GenericBreakingChangeAttribute is the base class of the BreakingChangeAttribute classes and have a protected method named as Get-AttributeSpecificMessage.
-    # We can use this to get the specific message to show on document.
-    $Method = $attribute.GetType().GetMethod('GetAttributeSpecificMessage', [System.Reflection.BindingFlags]::NonPublic -bor [System.Reflection.BindingFlags]::Instance)
+    # GenericBreakingChangeAttribute is the base class of the BreakingChangeAttribute classes and have a protected method named as Get-AttributeSpecIficMessage.
+    # We can use this to get the specIfic message to show on document.
+    $Method = $attribute.GetType().GetMethod('GetAttributeSpecIficMessage', [System.Reflection.BindingFlags]::NonPublic -bor [System.Reflection.BindingFlags]::Instance)
 
-    return $Method.Invoke($attribute, @())
+    Return $Method.Invoke($attribute, @())
 }
 
-# Get the breaking change info of the cmdlet parameter.
-function Find-ParameterBreakingChange
+# Get the breaking change info of the cmdlet Parameter.
+Function Find-ParameterBreakingChange
 {
     [CmdletBinding()]
-    param (
+    Param (
         [Parameter()]
         [System.Management.Automation.ParameterMetadata]
         $ParameterInfo
     )
 
-    foreach ($attribute in $ParameterInfo.Attributes)
+    ForEach ($attribute In $ParameterInfo.Attributes)
     {
-        if ($attribute.TypeId.BaseType.Name -eq 'GenericBreakingChangeAttribute')
+        If ($attribute.TypeId.BaseType.Name -eq 'GenericBreakingChangeAttribute')
         {
-            return Get-AttributeSpecificMessage($attribute)
+            Return Get-AttributeSpecIficMessage($attribute)
         }
     }
 
-    return $null
+    Return $Null
 }
 
 # Get the breaking change info of the cmdlet.
-function Find-CmdletBreakingChange
+Function Find-CmdletBreakingChange
 {
     [CmdletBinding()]
-    param (
+    Param (
         [Parameter()]
         [System.Management.Automation.CommandInfo]
         $CmdletInfo
@@ -71,11 +71,11 @@ function Find-CmdletBreakingChange
     $Result = @{}
     #Region get breaking change info of cmdlet
     $customAttributes = $CmdletInfo.ImplementingType.GetTypeInfo().GetCustomAttributes([System.object], $true)
-    foreach ($customAttribute in $customAttributes)
+    ForEach ($customAttribute In $customAttributes)
     {
-        if ($customAttribute.TypeId.BaseType.Name -eq 'GenericBreakingChangeAttribute')
+        If ($customAttribute.TypeId.BaseType.Name -eq 'GenericBreakingChangeAttribute')
         {
-            $tmp = Get-AttributeSpecificMessage($customAttribute)
+            $tmp = Get-AttributeSpecIficMessage($customAttribute)
             $result.Add($customAttribute.TypeId.Name, $tmp)
         }
     }
@@ -83,28 +83,28 @@ function Find-CmdletBreakingChange
 
     #Region get breaking change info of parameters
     $ParameterBreakingChanges = @{}
-    foreach ($parameterInfo in $CmdletInfo.Parameters.values)
+    ForEach ($ParameterInfo In $CmdletInfo.Parameters.values)
     {
-        $ParameterBreakingChange = Find-ParameterBreakingChange($parameterInfo)
-        if ($ParameterBreakingChange -ne $null)
+        $ParameterBreakingChange = Find-ParameterBreakingChange($ParameterInfo)
+        If ($Null -ne $ParameterBreakingChange)
         {
-            $ParameterBreakingChanges.Add($parameterInfo.Name, $ParameterBreakingChange)
+            $ParameterBreakingChanges.Add($ParameterInfo.Name, $ParameterBreakingChange)
         }
     }
-    if ($ParameterBreakingChanges.Count -ne 0)
+    If ($ParameterBreakingChanges.Count -ne 0)
     {
         $Result.Add("Parameter", $ParameterBreakingChanges)
     }
     #EndRegion
 
-    return $Result
+    Return $Result
 }
 
 # Get the upcoming breaking change document of the module.
-function Get-ModuleBreakingChangeMsg
+Function Get-ModuleBreakingChangeMsg
 {
     [CmdletBinding()]
-    param (
+    Param (
         [Parameter()]
         [String]
         $ModuleName
@@ -114,10 +114,10 @@ function Get-ModuleBreakingChangeMsg
     Import-Module $psd1Path
     $ModuleInfo = Get-Module $ModuleName
     $Result = @{}
-    foreach ($cmdletInfo in $ModuleInfo.ExportedCmdlets.Values)
+    ForEach ($cmdletInfo In $ModuleInfo.ExportedCmdlets.Values)
     {
         $cmdletBreakingChangeInfo = Find-CmdletBreakingChange($cmdletInfo)
-        if ($cmdletBreakingChangeInfo.Count -ne 0)
+        If ($cmdletBreakingChangeInfo.Count -ne 0)
         {
             $Result.Add($cmdletInfo.Name, $cmdletBreakingChangeInfo)
         }
@@ -125,49 +125,141 @@ function Get-ModuleBreakingChangeMsg
     #EndRegion
 
     #Region combine the breaking change messages into markdown format
-    if ($Result.Count -ne 0)
+    If ($Result.Count -ne 0)
     {
         $Msg = "# $ModuleName`n"
-        foreach ($cmdletName in $Result.Keys)
+        ForEach ($cmdletName In $Result.Keys)
         {
             $Msg += "`n## $cmdletName`n"
             $cmdletBreakingChangeInfo = $Result[$cmdletName]
-            foreach ($key in $cmdletBreakingChangeInfo.Keys)
+            ForEach ($key In $cmdletBreakingChangeInfo.Keys)
             {
-                if ($key -ne 'Parameter')
+                If ($key -ne 'Parameter')
                 {
                     $Msg += $cmdletBreakingChangeInfo[$key]
                 }
-                else
+                Else
                 {
-                    foreach ($parameterName in $cmdletBreakingChangeInfo['Parameter'].Keys)
+                    ForEach ($parameterName In $cmdletBreakingChangeInfo['Parameter'].Keys)
                     {
-                        $Msg += "### $parameterName`n"
-                        $Msg += ($cmdletBreakingChangeInfo['Parameter'][$parameterName] + "`n")
+                        $Msg += "### $ParameterName`n"
+                        $Msg += ($cmdletBreakingChangeInfo['Parameter'][$ParameterName] + "`n")
                     }
                 }
             }
         }
-        return $Msg
+        Return $Msg
     }
     #EndRegion
 }
 
-function Export-BreakingChangeMsg
+Function Export-BreakingChangeMsg
 {
     [CmdletBinding()]
-    param ()
+    Param ()
     $artifactsPath = [System.IO.Path]::Combine($PSScriptRoot, "..", "..", "artifacts", "Debug")
     $moduleList = (Get-ChildItem -Path $artifactsPath).Name
     $totalResult = ''
-    foreach ($moduleName in $moduleList)
+    ForEach ($moduleName In $moduleList)
     {
         $msg = Get-ModuleBreakingChangeMsg($moduleName)
-        if ($msg -ne $Null)
+        If ($Null -ne $msg)
         {
             $totalResult += "`n`n$msg"
         }
     }
 
     $totalResult | Out-File -LiteralPath "UpcommingBreakingChanges.md"
+}
+
+Function Get-BreakingChangeOfGeneratedModule
+{
+    [CmdletBinding()]
+    Param (
+        [Parameter()]
+        [String]
+        $ModuleName
+    )
+    $AllBreakingChangeMessages = @{}
+
+
+    $Dll = [Reflection.Assembly]::LoadFrom([System.IO.Path]::Combine($PSScriptRoot, "..", "..", "src",  "$ModuleName", "bin", "Az.$ModuleName.private.dll"))
+    $Cmdlets = $Dll.ExportedTypes | Where-Object { $_.CustomAttributes.Attributetype.name -contains "GeneratedAttribute" }
+
+    $BreakingChangeCmdlets = $Cmdlets | Where-Object { $_.CustomAttributes.Attributetype.BaseType.Name -contains "GenericBreakingChangeAttribute" }
+    ForEach ($BreakingChangeCmdlet in $BreakingChangeCmdlets)
+    {
+        $ParameterSetName = $BreakingChangeCmdlet.Name
+        $CmdletAttribute = $BreakingChangeCmdlet.CustomAttributes | Where-Object { $_.AttributeType.Name -eq 'CmdletAttribute' }
+        $Verb = $CmdletAttribute.ConstructorArguments[0].Value
+        $Noun = $CmdletAttribute.ConstructorArguments[1].Value.Split('_')[0]
+        $CmdletName = "$Verb-$Noun"
+
+        $BreakingChangeAttributes = $BreakingChangeCmdlet.CustomAttributes | Where-Object { $_.Attributetype.BaseType.Name -eq 'GenericBreakingChangeAttribute' }
+        ForEach ($BreakingChangeAttribute In $BreakingChangeAttributes)
+        {
+            $Attribute = $BreakingChangeAttribute.Constructor.Invoke(@($BreakingChangeAttribute.ConstructorArguments.value))
+            $GetAttributeSpecificMessageMethod = $Attribute.GetType().GetMethod('GetAttributeSpecificMessage', [System.Reflection.BindingFlags]::NonPublic -bor [System.Reflection.BindingFlags]::Instance)
+            $BreakingChangeMessage = $GetAttributeSpecificMessageMethod.Invoke($Attribute, @())
+    
+            $PrintCustomAttributeInfo = [System.Action[System.String]]{
+                Param([System.String] $s)
+                $BreakingChangeMessage = "$$BreakingChangeMessage\n$s"
+            }
+            $PrintCustomAttributeInfoMethod = $Attribute.GetType().GetMethod('PrintCustomAttributeInfo', [System.Reflection.BindingFlags]::Public -bor [System.Reflection.BindingFlags]::Instance)
+            $PrintCustomAttributeInfoMethod.Invoke($Attribute, @($PrintCustomAttributeInfo))
+    
+            If (-not $AllBreakingChangeMessages.ContainsKey($CmdletName))
+            {
+                $AllBreakingChangeMessages.Add($CmdletName, @{})
+            }
+            If (-not $AllBreakingChangeMessages[$CmdletName].ContainsKey($ParameterSetName))
+            {
+                $AllBreakingChangeMessages[$CmdletName].Add($ParameterSetName, @{
+                    "CmdletBreakingChange" = @($BreakingChangeMessage)
+                })
+            }
+            Else {
+                $AllBreakingChangeMessages[$CmdletName][$ParameterSetName] += @(BreakingChangeMessage)
+            }
+        }
+    }
+
+    ForEach ($Cmdlet in $Cmdlets)
+    {
+        $ParameterBreakingChangeMessage = @{}
+        $ParameterSetName = $Cmdlet.Name
+        $CmdletAttribute = $Cmdlet.CustomAttributes | Where-Object { $_.AttributeType.Name -eq 'CmdletAttribute' }
+        $Verb = $CmdletAttribute.ConstructorArguments[0].Value
+        $Noun = $CmdletAttribute.ConstructorArguments[1].Value.Split('_')[0]
+        $CmdletName = "$Verb-$Noun"
+        $Parameters = $Cmdlet.DeclaredMembers | Where-Object { $_.CustomAttributes.Attributetype.Name -eq 'ParameterBreakingChangeAttribute' }
+        ForEach ($Parameter In $Parameters)
+        {
+            $ParameterName = $Parameter.Name
+            $ParameterAttribute = $Parameter.CustomAttributes | Where-Object { $_.AttributeType.Name -eq 'ParameterBreakingChangeAttribute' }
+            $Attribute = $ParameterAttribute.Constructor.Invoke(@($ParameterAttribute.ConstructorArguments.value))
+            $GetAttributeSpecificMessageMethod = $Attribute.GetType().GetMethod('GetAttributeSpecificMessage', [System.Reflection.BindingFlags]::NonPublic -bor [System.Reflection.BindingFlags]::Instance)
+            $BreakingChangeMessage = $GetAttributeSpecificMessageMethod.Invoke($Attribute, @())
+            $ParameterBreakingChangeMessage.Add($ParameterName, $BreakingChangeMessage)
+        }
+        If ($ParameterBreakingChangeMessage.Count -ne 0)
+        {
+            If (-not $AllBreakingChangeMessages.ContainsKey($CmdletName))
+            {
+                $AllBreakingChangeMessages.Add($CmdletName, @{})
+            }
+            If (-not $AllBreakingChangeMessages[$CmdletName].ContainsKey($ParameterSetName))
+            {
+                $AllBreakingChangeMessages[$CmdletName].Add($ParameterSetName, @{
+                    "ParameterBreakingChange" = $ParameterBreakingChangeMessage
+                })
+            }
+            Else {
+                $AllBreakingChangeMessages[$CmdletName][$ParameterSetName].Add('ParameterBreakingChange', $ParameterBreakingChangeMessage)
+            }
+        }
+    }
+
+    Return $AllBreakingChangeMessages
 }

@@ -17,7 +17,7 @@ This directory contains the PowerShell module for the SpringCloud service.
 This module was primarily generated via [AutoRest](https://github.com/Azure/autorest) using the [PowerShell](https://github.com/Azure/autorest.powershell) extension.
 
 ## Module Requirements
-- [Az.Accounts module](https://www.powershellgallery.com/packages/Az.Accounts/), version 1.7.4 or greater
+- [Az.Accounts module](https://www.powershellgallery.com/packages/Az.Accounts/), version 2.7.5 or greater
 
 ## Authentication
 AutoRest does not generate authentication code for the module. Authentication is handled via Az.Accounts by altering the HTTP payload before it is sent.
@@ -60,6 +60,22 @@ identity-correction-for-post: true
 # subject-prefix: ''
 
 directive:
+  - where:
+      verb: (.*)
+    set:
+      breaking-change:
+        deprecated-by-version: 9.0.0
+        change-effective-date: 2022/10/30
+  - where:
+      parameter-name: Name
+    set:
+      breaking-change:
+        old-parameter-type: string
+        new-parameter-type: boolean
+        become-mandatory: true
+        change-description: This is a custom message for the change.
+        deprecated-by-version: 9.0.0
+        change-effective-date: 2022/10/30
   - where:
       verb: Set
       subject: App$|Binding$|CustomDomain$|Deployment$|Service$|Certificate$|ConfigServerPut$|MonitoringSettingPut$
